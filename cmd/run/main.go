@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -28,6 +29,7 @@ type Guild struct {
 	ID             string
 	ActiveChannels map[string]struct{}
 	Count          int
+	HighestCount   int
 }
 
 func main() {
@@ -82,7 +84,15 @@ func (s *State) onMessageCreate(event *events.MessageCreate) {
 	}
 
 	if countGiven != currentGuildInfo.Count+1 {
-		_, _ = event.Client().Rest().CreateMessage(event.ChannelID, discord.NewMessageCreateBuilder().SetContent("OOP! Count resetting, you're a dumbo!").Build())
+		str := "OOP! Count resetting, you're a dumbo!"
+		if currentGuildInfo.HighestCount < currentGuildInfo.Count {
+			str += fmt.Sprintf(" You got a new highest count of %v! Previously it was %v.", currentGuildInfo.Count, currentGuildInfo.HighestCount)
+			currentGuildInfo.HighestCount = currentGuildInfo.Count
+		} else {
+			str += fmt.Sprintf(" Highest count reached is still %v.", currentGuildInfo.HighestCount)
+		}
+
+		_, _ = event.Client().Rest().CreateMessage(event.ChannelID, discord.NewMessageCreateBuilder().SetContent(str).Build())
 		event.Client().Rest().AddReaction(event.ChannelID, event.MessageID, "🚫")
 		currentGuildInfo.Count = 0
 	} else {
